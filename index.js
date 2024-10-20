@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
 const yaml = require('js-yaml');
-import crypto from 'node:crypto';
+const cryton = require('node:crypto');
 const app = express();
 
 const config = getConfig();
@@ -29,27 +29,27 @@ app.get('/gateway/heartbeat', function (req, res) {
     res.json({'time': new Date().getTime(), 'coldDown':{'time': lastTimeStamp}, 'implementation': 'zszfympx/DingZhenRefreshToken(TypeScript)'});
 })
 
-interface VapeAccount {
-    username: string;
-    password: string;
-    hwid: string;
+class VapeAccount {
+    username;
+    password;
+    hwid;
 }
 
-interface VapeAuthorizeDTO {
-    token: string;
-    status: Status;
+class VapeAuthorizeDTO {
+    token;
+    status;
 }
 
-enum Status {
-    CLOUDFLARE = 'CLOUDFLARE',
-    BANNED = 'BANNED',
-    INCORRECT = 'INCORRECT',
-    OK = 'OK',
-    SERVLET_ERROR = 'SERVLET_ERROR',
-    NO_ACCOUNT = 'NO_ACCOUNT'
+const Status ={
+    CLOUDFLARE:'CLOUDFLARE',
+    BANNED: 'BANNED',
+    INCORRECT: 'INCORRECT',
+    OK: 'OK',
+    SERVLET_ERROR: 'SERVLET_ERROR',
+    NO_ACCOUNT: 'NO_ACCOUNT'
 }
 
-async function doAuth(vapeAccount: VapeAccount): Promise<VapeAuthorizeDTO> {
+async function doAuth(vapeAccount) {
     if(lastTimeStamp+config.colddown<new Date().getTime()){
         return {token: '', status:Status.NO_ACCOUNT};
     }
@@ -88,7 +88,7 @@ async function doAuth(vapeAccount: VapeAccount): Promise<VapeAuthorizeDTO> {
             return { token: 'Empty auth data', status: Status.SERVLET_ERROR };
         }
     } catch (error) {
-        return { token: (error as Error).message, status: Status.SERVLET_ERROR };
+        return { token: '', status: Status.SERVLET_ERROR };
     }
 }
 
@@ -143,3 +143,7 @@ function getConfig() {
     const yamlContent = fs.readFileSync('config.yml', 'utf8');
     return yaml.load(yamlContent);
 }
+
+app.listen(config.port, ()=>{
+    console.log("DingZhenRefreshToken is running!");
+})

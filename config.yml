@@ -3,3 +3,4 @@ gateway:
   key: tg8DRuZZc9rAxrQgqDx/IuTa0ZgDogZ1cIxAO1udGPg=
 # 密钥刷新冷却
 colddown: 300
+port: 2333
