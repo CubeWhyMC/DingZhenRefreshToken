@@ -1,5 +1,8 @@
 const express = require('express');
 const axios = require('axios');
+const csv = require('csv');
+const papa = require('papaparse');
+const fs = require('fs');
 const app = express();
 
 app.get('/', function (req, res) {
@@ -7,14 +10,14 @@ app.get('/', function (req, res) {
 });
 
 app.get('/gateway/token', function (req, res) {
-    res.send(doAuth({username:'zszf', password:'a', hwid:'awa', id:'0'}));
+    var account = getAccount();
+    res.send(doAuth({username: account['username'], password: account['password'], hwid: account['hwid']}));
 })
 
 interface VapeAccount {
     username: string;
     password: string;
     hwid: string;
-    id: string;
 }
 
 interface VapeAuthorizeDTO {
@@ -68,4 +71,30 @@ async function doAuth(vapeAccount: VapeAccount): Promise<VapeAuthorizeDTO> {
     } catch (error) {
         return { token: (error as Error).message, status: Status.SERVLET_ERROR };
     }
+}
+
+function getAccount() {
+    fs.readFile('account.csv', 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error reading file:', err);
+          return;
+        }
+
+        const rows = data.split('\n');
+        const headers = rows[0].split(',');
+
+        var account = rows.slice(1).map(row => {
+            const values = row.split(',');
+            return headers.reduce((obj, header, index) => {
+            obj[header] = values[index];
+            return obj;
+            }, {});
+        })[0];
+
+        return {
+            username: account['username'],
+            password: account['password'],
+            hwid: account['hwid']
+        }
+    });
 }

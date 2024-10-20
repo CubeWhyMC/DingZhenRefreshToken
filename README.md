@@ -7,6 +7,10 @@
 ## 购买丁真
 [getvape](https://getvape.today/)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=CubeWhyMC/DingZhenServlet,zszfympx/DingZhenRefreshToken&type=Date)](https://star-history.com/#CubeWhyMC/DingZhenServlet&zszfympx/DingZhenRefreshToken&Date)
+
 ## 开源协议
 DingZhenRefreshToken基于GPLv3协议开源  
 你可以：  
