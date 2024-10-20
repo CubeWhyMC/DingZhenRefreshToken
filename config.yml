@@ -1,0 +1,5 @@
+gateway:
+# secretKey 务必与丁真服务端设置一致
+  key: tg8DRuZZc9rAxrQgqDx/IuTa0ZgDogZ1cIxAO1udGPg=
+# 密钥刷新冷却
+colddown: 300

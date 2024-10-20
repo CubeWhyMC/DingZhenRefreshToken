@@ -1,17 +1,32 @@
 const express = require('express');
 const axios = require('axios');
-const csv = require('csv');
-const papa = require('papaparse');
 const fs = require('fs');
+const yaml = require('js-yaml');
+import crypto from 'node:crypto';
 const app = express();
+
+const config = getConfig();
+const key = config.gateway.key;
+
+let lastTimeStamp = 0;
 
 app.get('/', function (req, res) {
     res.send('DingZhen Refresh Token.');
 });
 
 app.get('/gateway/token', function (req, res) {
+    if(!isCorrectSecret(req.get('X-Gateway-Secret'))){
+        res.send('secret is not correct');
+    }
     var account = getAccount();
     res.send(doAuth({username: account['username'], password: account['password'], hwid: account['hwid']}));
+})
+
+app.get('/gateway/heartbeat', function (req, res) {
+    if(!isCorrectSecret(req.get('X-Gateway-Secret'))){
+        res.send('secret is not correct', 403);
+    }
+    res.json({'time': new Date().getTime(), 'coldDown':{'time': lastTimeStamp}, 'implementation': 'zszfympx/DingZhenRefreshToken(TypeScript)'});
 })
 
 interface VapeAccount {
@@ -30,10 +45,15 @@ enum Status {
     BANNED = 'BANNED',
     INCORRECT = 'INCORRECT',
     OK = 'OK',
-    SERVLET_ERROR = 'SERVLET_ERROR'
+    SERVLET_ERROR = 'SERVLET_ERROR',
+    NO_ACCOUNT = 'NO_ACCOUNT'
 }
 
 async function doAuth(vapeAccount: VapeAccount): Promise<VapeAuthorizeDTO> {
+    if(lastTimeStamp+config.colddown<new Date().getTime()){
+        return {token: '', status:Status.NO_ACCOUNT};
+    }
+    lastTimeStamp = new Date().getTime();
     try {
         const response = await axios.post(
             'http://www.vape.gg/auth.php',
@@ -62,7 +82,6 @@ async function doAuth(vapeAccount: VapeAccount): Promise<VapeAuthorizeDTO> {
                         return { token: responseString, status: Status.INCORRECT };
                 }
             }
-
             console.debug(`Fetch token for ${vapeAccount.username} (${responseString})`);
             return { token: responseString, status: Status.OK };
         } else {
@@ -97,4 +116,30 @@ function getAccount() {
             hwid: account['hwid']
         }
     });
+}
+
+function isCorrectSecret(GatewaySecret){
+    return decrypt(GatewaySecret, key)==='Hello World'
+}
+
+function decrypt(ciphertext, key) {
+    const algorithm = 'AES/CBC/PKCS5Padding';
+    const iv = getIV();
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+
+    let decrypted = decipher.update(ciphertext, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+function getIV() {
+    const keyBuffer = Buffer.from(key, 'base64');
+    const iv = Buffer.alloc(16);
+    keyBuffer.copy(iv, 0, 0, 16);
+    return iv;
+}
+
+function getConfig() {
+    const yamlContent = fs.readFileSync('config.yml', 'utf8');
+    return yaml.load(yamlContent);
 }
