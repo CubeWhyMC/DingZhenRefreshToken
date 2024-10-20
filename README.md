@@ -1,6 +1,8 @@
 # Ding Zhen Refresh Token
 > 用于丁真服务端密钥刷新服务的ts实现
 
+*警告：本项目处于开发阶段，请勿投入生产，请汇报bug谢谢！*
+
 ## 有关项目
 [丁真租号玩](https://github.com/CubeWhyMC/DingZhenServlet) 
 
