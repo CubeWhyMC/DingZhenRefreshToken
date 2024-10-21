@@ -2,11 +2,12 @@ const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
 const yaml = require('js-yaml');
-const cryton = require('node:crypto');
+const cryton = require('crypto');
 const app = express();
 
 const config = getConfig();
 const key = config.gateway.key;
+const algorithm = 'AES/CBC/PKCS5Padding';
 
 let lastTimeStamp = 0;
 
@@ -28,18 +29,6 @@ app.get('/gateway/heartbeat', function (req, res) {
     }
     res.json({'time': new Date().getTime(), 'coldDown':{'time': lastTimeStamp}, 'implementation': 'zszfympx/DingZhenRefreshToken(TypeScript)'});
 })
-
-class VapeAccount {
-    username;
-    password;
-    hwid;
-}
-
-class VapeAuthorizeDTO {
-    token;
-    status;
-}
-
 const Status ={
     CLOUDFLARE:'CLOUDFLARE',
     BANNED: 'BANNED',
@@ -79,11 +68,11 @@ async function doAuth(vapeAccount) {
                         return { token: 'Disabled', status: Status.BANNED };
                     default:
                         console.error(`Auth server responded an error: ${responseString} (Account: ${vapeAccount.username})`);
-                        return { token: responseString, status: Status.INCORRECT };
+                        return { token: 'Null', status: Status.INCORRECT };
                 }
             }
             console.debug(`Fetch token for ${vapeAccount.username} (${responseString})`);
-            return { token: responseString, status: Status.OK };
+            return { token: encrypt(responseString, key) , status: Status.OK };
         } else {
             return { token: 'Empty auth data', status: Status.SERVLET_ERROR };
         }
@@ -123,13 +112,20 @@ function isCorrectSecret(GatewaySecret){
 }
 
 function decrypt(ciphertext, key) {
-    const algorithm = 'AES/CBC/PKCS5Padding';
     const iv = getIV();
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
 
     let decrypted = decipher.update(ciphertext, 'base64', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
+}
+
+function encrypt(plainText, key){
+    const iv = getIV();
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let crypted = cipher.update(plainText, 'base64', 'utf8');
+    crypted += cipher.final('utf8');
+    return crypted;
 }
 
 function getIV() {
